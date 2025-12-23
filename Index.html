@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Olohuoneen Leffateatteri</title>
+    <style>
+        :root {
+            --primary-color: #e50914;
+            --seat-free: #4caf50;
+            --seat-reserved: #ffeb3b; 
+            --bg-color: #1a1a1a;
+            --text-color: #ffffff;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 { margin-bottom: 10px; text-align: center; }
+
+        /* --- DATE --- */
+        .controls { margin-bottom: 20px; }
+        input[type="date"] {
+            padding: 8px;
+            border-radius: 5px;
+            border: none;
+            font-size: 1rem;
+        }
+
+        /* --- ROOM LAYOUT --- */
+        .room-container {
+            background-image: url('living_room.jpg'); 
+            background-size: cover;
+            background-position: center;
+            background-color: #333;
+            width: 400px; 
+            height: 400px;
+            position: relative;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            border: 4px solid #555;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+        }
+
+        .room-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.2); 
+            border-radius: 6px;
+            pointer-events: none; 
+        }
+
+        .seat {
+            width: 45px;
+            height: 45px;
+            background-color: var(--seat-free);
+            border-radius: 8px;
+            position: absolute;
+            cursor: pointer;
+            transition: transform 0.2s, background-color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 1px 1px 3px #000;
+            box-shadow: 0 0 10px rgba(0,0,0,0.8);
+            z-index: 10;
+        }
+
+        .seat:hover { transform: scale(1.1); }
+        .seat.reserved { background-color: var(--seat-reserved); color: #333; }
+
+        /* POSITIONS */
+        #seat-1 { top: 70px; left: 40px; }
+        #seat-2 { top: 70px; left: 100px; }
+        #seat-3 { top: 70px; left: 160px; }
+        #seat-4 { top: 70px; right: 25px; }
+
+
+        /* --- MOVIES --- */
+        .section-title { border-bottom: 1px solid #555; padding-bottom: 10px; margin-top: 30px; width: 100%; max-width: 600px; text-align: center;}
+        
+        .movie-grid {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        .movie-card {
+            width: 140px;
+            cursor: pointer;
+            text-align: center;
+            opacity: 0.8;
+            transition: 0.3s;
+            position: relative;
+        }
+        
+        .movie-card:hover { opacity: 1; transform: translateY(-5px); }
+        
+        .movie-card.active img { 
+            border: 4px solid var(--seat-free); 
+            box-shadow: 0 0 20px var(--seat-free); 
+        }
+
+        .movie-poster {
+            width: 100%;
+            height: 210px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border: 2px solid transparent;
+            background: #222;
+        }
+
+        /* --- SNACKS (UPDATED) --- */
+        .snack-grid { display: flex; gap: 15px; margin-top: 20px; flex-wrap: wrap; justify-content: center; max-width: 800px; }
+        
+        .snack-card {
+            background: #333;
+            padding: 10px;
+            border-radius: 10px;
+            cursor: pointer;
+            text-align: center;
+            /* WIDTH INCREASED from 90px to 130px */
+            width: 130px; 
+            border: 2px solid transparent;
+        }
+        .snack-card.active { border-color: var(--seat-free); background: #444; color: #fff; }
+        .snack-icon { font-size: 2rem; display: block; margin-bottom: 5px; }
+
+        /* --- MODAL --- */
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 100; 
+            left: 0; top: 0; 
+            width: 100%; height: 100%; 
+            background-color: rgba(0,0,0,0.9);
+        }
+        .modal-content {
+            position: relative;
+            background-color: #222;
+            margin: 5% auto;
+            padding: 0;
+            width: 90%;
+            max-width: 700px;
+            border-radius: 10px;
+            overflow: hidden;
+            text-align: center;
+        }
+        
+        .video-wrapper {
+            position: relative;
+            padding-bottom: 56.25%;
+            height: 0;
+        }
+        .video-wrapper iframe {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+        }
+
+        .modal-footer { padding: 20px; }
+
+        .choose-btn {
+            background-color: var(--seat-free);
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1rem;
+            cursor: pointer;
+        }
+        .close-btn {
+            position: absolute;
+            top: 10px; right: 15px;
+            color: #fff;
+            font-size: 30px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 101;
+            background: rgba(0,0,0,0.5);
+            padding: 0 10px;
+            border-radius: 50%;
+        }
+
+        /* --- PRINT BUTTON --- */
+        #print-btn {
+            margin-top: 40px;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+        }
+
+        /* --- PRINT RECEIPT --- */
+        #ticket-receipt { display: none; }
+
+        @media print {
+            body * { visibility: hidden; }
+            #ticket-receipt, #ticket-receipt * { visibility: visible; }
+            #ticket-receipt {
+                display: block !important;
+                position: absolute;
+                left: 0; top: 0; width: 100%;
+                color: black;
+                font-family: 'Courier New', Courier, monospace;
+                padding: 40px;
+                border: 4px double black;
+                text-align: center;
+            }
+            .ticket-row { text-align: left; margin: 10px 0; font-size: 1.2rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🎬 Olohuoneen Leffateatteri</h1>
+    
+    <div class="controls">
+        <input type="date" id="movie-date">
+    </div>
+
+    <div class="room-container">
+        <div class="room-overlay"></div>
+        <div class="seat" id="seat-1" data-id="Sohva 1" onclick="toggleSeat(this)">1</div>
+        <div class="seat" id="seat-2" data-id="Sohva 2" onclick="toggleSeat(this)">2</div>
+        <div class="seat" id="seat-3" data-id="Sohva 3" onclick="toggleSeat(this)">3</div>
+        <div class="seat" id="seat-4" data-id="Nojatuoli" onclick="toggleSeat(this)">4</div>
+    </div>
+
+    <h2 class="section-title">Valitse elokuva</h2>
+    <div class="movie-grid" id="movie-list"></div>
+
+    <h2 class="section-title">Valitse herkut</h2>
+    <div class="snack-grid" id="snack-list"></div>
+
+    <button id="print-btn" onclick="printTicket()">Tulosta liput 🖨️</button>
+
+    <div id="trailer-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal()">&times;</span>
+            <div class="video-wrapper" id="video-container"></div>
+            <div class="modal-footer">
+                <h2 id="modal-title" style="margin-top:0">Title</h2>
+                <button class="choose-btn" onclick="confirmMovie()">Valitse tämä elokuva</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="ticket-receipt">
+        <h1>PÄÄSYLIPPU</h1>
+        <hr>
+        <h3>Olohuoneen Leffateatteri</h3>
+        <div class="ticket-row"><strong>Päivämäärä:</strong> <span id="t-date"></span></div>
+        <div class="ticket-row"><strong>Elokuva:</strong> <span id="t-movie"></span></div>
+        <div class="ticket-row"><strong>Paikat:</strong> <span id="t-seats"></span></div>
+        <div class="ticket-row"><strong>Herkut:</strong> <span id="t-snacks"></span></div>
+        <hr>
+        <p><i>Saavu paikalle 5 min ennen näytöstä.</i></p>
+    </div>
+
+    <script>
+        const movies = [
+            { 
+                id: 1, 
+                title: "The Matrix", 
+                poster: "movie1.jpg", 
+                trailer: "vKQi3bBA1y8" 
+            },
+            { 
+                id: 2, 
+                title: "Inception", 
+                poster: "movie2.jpg", 
+                trailer: "YoHD9XEInc0" 
+            },
+            { 
+                id: 3, 
+                title: "Interstellar", 
+                poster: "movie3.jpg", 
+                trailer: "zSWdZVtXT7E" 
+            }
+        ];
+
+        // UPDATED SNACKS: "Sipsejä" icon changed to Taco (Nachos proxy),
+        const snacks = [
+            { id: 1, name: "Poppareita", icon: "🍿" },
+            { id: 2, name: "Limua", icon: "🥤" },
+            { id: 3, name: "Sipsejä", icon: "🌮" }, // Changed to Taco as closest Nachos emoji
+            { id: 4, name: "Karkkia", icon: "🍬" },
+            { id: 5, name: "Dippivihannekset", icon: "🥕" }
+        ];
+
+        let selection = { movie: null, seats: [], snacks: [] };
+        let tempMovie = null;
+
+        window.onload = () => {
+            document.getElementById('movie-date').valueAsDate = new Date();
+            renderMovies();
+            renderSnacks();
+        };
+
+        function renderMovies() {
+            const container = document.getElementById('movie-list');
+            container.innerHTML = movies.map(m => `
+                <div class="movie-card" id="movie-${m.id}" onclick="openModal(${m.id})">
+                    <img src="${m.poster}" class="movie-poster" alt="${m.title}" onerror="this.style.display='none';this.parentElement.innerHTML+='<br>Kuva puuttuu'">
+                    <strong>${m.title}</strong>
+                </div>
+            `).join('');
+        }
+
+        function renderSnacks() {
+            const container = document.getElementById('snack-list');
+            container.innerHTML = snacks.map(s => `
+                <div class="snack-card" id="snack-${s.id}" onclick="toggleSnack(${s.id})">
+                    <span class="snack-icon">${s.icon}</span>
+                    <div>${s.name}</div>
+                </div>
+            `).join('');
+        }
+
+        function toggleSeat(el) {
+            if (el.classList.contains('reserved')) {
+                el.classList.remove('reserved');
+                el.style.backgroundColor = 'var(--seat-free)';
+                selection.seats = selection.seats.filter(s => s !== el.dataset.id);
+            } else {
+                el.classList.add('reserved');
+                selection.seats.push(el.dataset.id);
+            }
+        }
+
+        function toggleSnack(id) {
+            const snack = snacks.find(s => s.id === id);
+            const el = document.getElementById(`snack-${id}`);
+            if (selection.snacks.includes(snack.name)) {
+                selection.snacks = selection.snacks.filter(s => s !== snack.name);
+                el.classList.remove('active');
+            } else {
+                selection.snacks.push(snack.name);
+                el.classList.add('active');
+            }
+        }
+
+        function openModal(id) {
+            tempMovie = movies.find(m => m.id === id);
+            document.getElementById('modal-title').innerText = tempMovie.title;
+            const videoHTML = `
+                <iframe src="https://www.youtube.com/embed/${tempMovie.trailer}?autoplay=1" 
+                frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                allowfullscreen></iframe>`;
+            document.getElementById('video-container').innerHTML = videoHTML;
+            document.getElementById('trailer-modal').style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('trailer-modal').style.display = 'none';
+            document.getElementById('video-container').innerHTML = '';
+        }
+
+        function confirmMovie() {
+            selection.movie = tempMovie;
+            document.querySelectorAll('.movie-card').forEach(el => el.classList.remove('active'));
+            document.getElementById(`movie-${tempMovie.id}`).classList.add('active');
+            closeModal();
+        }
+
+        function printTicket() {
+            if (!selection.movie) { alert("Valitse ensin elokuva!"); return; }
+            if (selection.seats.length === 0) { alert("Valitse vähintään yksi paikka!"); return; }
+
+            document.getElementById('t-date').innerText = document.getElementById('movie-date').value;
+            document.getElementById('t-movie').innerText = selection.movie.title;
+            document.getElementById('t-seats').innerText = selection.seats.join(', ');
+            document.getElementById('t-snacks').innerText = selection.snacks.length > 0 ? selection.snacks.join(', ') : "Ei herkkuja";
+            window.print();
+        }
+
+        window.onclick = function(event) {
+            if (event.target == document.getElementById('trailer-modal')) {
+                closeModal();
+            }
+        }
+    </script>
+</body>
+</html>
